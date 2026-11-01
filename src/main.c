@@ -2,26 +2,24 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 #include <err.h>
 
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
 
-#include <unistd.h>
-
 int main() {
-	int srv = socket(AF_INET, SOCK_STREAM, 0);  // 1. ask the kernel for a socket
+	int srv = socket(AF_INET, SOCK_STREAM, 0); // request socket
 	int port = 8080;
 	int client, running = 1;
 
 	printf("[*] Server setup and running on %d\n", port);
 
-	struct sockaddr_in addr = {0}; // Zero-initialize the memory
+	struct sockaddr_in addr = {0};
 	addr.sin_family = AF_INET;
 	addr.sin_port = htons(port);
 	addr.sin_addr.s_addr = INADDR_ANY;
-
 
 	if (bind(srv, (struct sockaddr *)&addr, sizeof(addr)) == -1)
 		err(EXIT_FAILURE, "\n[!] bind");
@@ -40,7 +38,7 @@ int main() {
 		// parse
 		char method[16], path[2048], protocol[16];
 		sscanf(buf, "%15s %2047s %15s", method, path, protocol);
-		//printf("Method: %s\nPath: %s\nProtocol: %s\n", method, path, protocol);
+		printf("Method: %s\nPath: %s\nProtocol: %s\n", method, path, protocol);
 
 		char *body = strstr(buf, "\r\n\r\n");
 		if (body) {
@@ -54,8 +52,20 @@ int main() {
 		}
 
 		// respond
-		const char *resp = "HTTP/1.1 200 OK\r\nContent-Length: 2\r\n\r\nGot message!";
-		write(client, resp, strlen(resp));
+		const char *resp_body = "Got message!";
+		int resp_body_len = strlen(resp_body);
+
+		char response[4096];
+		snprintf(response, sizeof(response),
+						"HTTP/1.1 200 OK\r\n"
+		        "Content-Type: text/plain\r\n"
+		        "Content-Length: %d\r\n"
+		        "\r\n"
+		        "%s",
+            resp_body_len, resp_body
+						);
+
+		write(client, response, strlen(response));
 
 		close(client);
 	}
