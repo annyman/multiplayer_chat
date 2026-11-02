@@ -28,8 +28,12 @@ int main() {
 		err(EXIT_FAILURE, "\n[!] listen");
 
 	while (running) {
-		client = accept(srv, NULL, NULL);
-		printf("[*] Client found!\n");
+		struct sockaddr_in c_addr;
+    socklen_t c_len = sizeof(c_addr);
+
+    client = accept(srv, (struct sockaddr *)&c_addr, &c_len); // accept connection and get an fd for client
+    printf("[*] Client found! IP: %s:%d\n", inet_ntoa(c_addr.sin_addr), ntohs(c_addr.sin_port));
+
 		char buf[500] = {0}; // flush buffer
 
 		if (read(client, buf, sizeof(buf)) < 0)
